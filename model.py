@@ -72,8 +72,15 @@ class UNET(nn.Module):
             self.encoder_config.append(((d, d), "downsample"))
             if idx < len(channel_sizes) - 1:  # @QUESTION: what does this mean?
                 self.encoder_config.append(((d, channel_sizes[idx + 1]), "residual"))
-        # for item in self.encoder_config:
-        #     print(item)
+        """for item in self.encoder_config:
+            print(item)"""
+
+        # Residual blocks for each group
+        self.bottleneck_config = []
+        for _ in range(residual_blocks_per_group):
+            self.bottleneck_config.append(
+                ((ending_channel_size, ending_channel_size), "residual")
+            )
 
 
 if __name__ == "__main__":
