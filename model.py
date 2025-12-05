@@ -65,6 +65,8 @@ class UNET(nn.Module):
         self.interpolate = interpolated_upsample
         channel_sizes = [start_dim * i for i in dim_mults]
         starting_channel_size, ending_channel_size = channel_sizes[0], channel_sizes[-1]
+
+        # Encoder config
         self.encoder_config = []
         for idx, d in enumerate(channel_sizes):
             for _ in range(residual_blocks_per_group):
@@ -81,6 +83,30 @@ class UNET(nn.Module):
             self.bottleneck_config.append(
                 ((ending_channel_size, ending_channel_size), "residual")
             )
+
+        out_dim = ending_channel_size
+        reversed_encoder_config = self.encoder_config[::-1]
+
+        # Decoder config
+        # Note: look at the visual image of U-Net to understand this block of code better
+        self.decoder_config = []
+        for idx, (metadata, type) in enumerate(reversed_encoder_config):
+            enc_in_channels, enc_out_channels = metadata
+            concat_num_channels = out_dim + enc_out_channels
+            self.decoder_config.append(
+                ((concat_num_channels, enc_in_channels), "residual")
+            )
+            if type == "downsample":
+                self.decoder_config.append(
+                    ((enc_in_channels, enc_in_channels), "upsample")
+                )
+            out_dim = enc_in_channels
+
+        # Special last block of decoder config
+        concat_num_channels = starting_channel_size * 2
+        self.decoder_config.append(
+            ((starting_channel_size, starting_channel_size), "residual")
+        )
 
 
 if __name__ == "__main__":
