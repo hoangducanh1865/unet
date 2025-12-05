@@ -32,9 +32,26 @@ class ResidualBlock(nn.Module):
         return x
 
 
+class UpsampleBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, interpolate=False):
+        super().__init__()
+        if interpolate:
+            self.upsample = nn.Sequential(
+                nn.Upsample(scale_factor=2, mode="bilinear"),
+                nn.Conv2d(in_channels, out_channels, kernel_size=3, padding="same"),
+            )
+        else:
+            self.upsample = nn.ConvTranspose2d(
+                in_channels, out_channels, kernel_size=2, stride=2
+            )
+
+    def forward(self, x):
+        return self.upsample(x)
+
+
 if __name__ == "__main__":
     rand = torch.randn(4, 32, 256, 256)
     print(rand.shape)
-    block = ResidualBlock(in_channels=32, out_channels=64, groupnorm_num_group=16)
+    block = UpsampleBlock(in_channels=32, out_channels=64, interpolate=True)
     out_rand = block(rand)
     print(out_rand.shape)
