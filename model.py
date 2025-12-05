@@ -49,9 +49,36 @@ class UpsampleBlock(nn.Module):
         return self.upsample(x)
 
 
+class UNET(nn.Module):
+    def __init__(
+        self,
+        in_channels=3,
+        num_classes=150,
+        start_dim=64,
+        dim_mults=(1, 2, 4, 8),
+        residual_blocks_per_group=3,
+        groupnorm_num_group=16,
+        interpolated_upsample=False,
+    ):
+        super().__init__()
+        self.input_image_channels = in_channels
+        self.interpolate = interpolated_upsample
+        channel_sizes = [start_dim * i for i in dim_mults]
+        starting_channel_size, ending_channel_size = channel_sizes[0], channel_sizes[-1]
+        self.encoder_config = []
+        for idx, d in enumerate(channel_sizes):
+            for _ in range(residual_blocks_per_group):
+                self.encoder_config.append(((d, d), "residual"))
+            self.encoder_config.append(((d, d), "downsample"))
+            if idx < len(channel_sizes) - 1:  # @QUESTION: what does this mean?
+                self.encoder_config.append(((d, channel_sizes[idx + 1]), "residual"))
+        # for item in self.encoder_config:
+        #     print(item)
+
+
 if __name__ == "__main__":
     rand = torch.randn(4, 32, 256, 256)
     print(rand.shape)
-    block = UpsampleBlock(in_channels=32, out_channels=64, interpolate=True)
-    out_rand = block(rand)
-    print(out_rand.shape)
+    unet = UNET()
+    # out_rand = unet(rand)
+    # print(out_rand.shape)
